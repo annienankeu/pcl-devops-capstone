@@ -1,15 +1,28 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_NAME = "annie237/flask-capstone"
-  }
+    stages {
 
-  stages {
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build -t annie/flask-capstone:latest .'
-      }
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/annienankeu/pcl-devops-capstone.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t flask-capstone:latest .'
+            }
+        }
     }
-  }
+
+    post {
+        success {
+            echo 'CI Pipeline executed successfully 🎉'
+        }
+
+        failure {
+            echo 'CI Pipeline failed ❌ Check logs'
+        }
+    }
 }
