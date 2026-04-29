@@ -8,7 +8,7 @@ pipeline {
   stages {
     stage('Build Docker Image') {
       steps {
-        sh 'docker build -t $ annie capstone .'
+        sh 'docker build -t annie/flask-capstone:latest .'
       }
     }
   }
