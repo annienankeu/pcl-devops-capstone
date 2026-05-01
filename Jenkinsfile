@@ -14,22 +14,23 @@ pipeline {
                 sh 'docker build -t flask-capstone:latest .'
             }
         }
-    }
-       stage('SonarQube Analysis') {
-          steps {
-             withSonarQubeEnv('SonarQube') {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                  sh '''
-                  sonar-scanner \
-                 -Dsonar.projectKey=flask-capstone \
-                 -Dsonar.sources=. \
-                 -Dsonar.host.url=http://host.docker.internal:9000 \
-                 -Dsonar.login=$SONAR_TOKEN
-                 '''
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=flask-capstone \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://host.docker.internal:9000 \
+                        -Dsonar.login=$SONAR_TOKEN
+                        '''
+                    }
+                }
             }
         }
     }
-} 
 
     post {
         success {
