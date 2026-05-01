@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "flask-capstone"
+    }
+
     stages {
 
         stage('Checkout Code') {
@@ -9,30 +13,32 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('SonarQube Analysis') {
             steps {
-                sh 'docker build -t flask-capstone:latest .'
+                withSonarQubeEnv('SonarQube') {
+
+                    def scannerHome = tool 'SonarScanner'
+
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=flask-capstone \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.token=$SONAR_TOKEN
+                        """
+                    }
+                }
             }
         }
 
-        stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('SonarQube') {
-
-            def scannerHome = tool 'SonarScanner'
-
-            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                sh """
-                ${scannerHome}/bin/sonar-scanner \
-                -Dsonar.projectKey=flask-capstone \
-                -Dsonar.sources=. \
-                -Dsonar.host.url=http://sonarqube:9000 \
-                -Dsonar.token=$SONAR_TOKEN
-                """
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
     }
-}
+
     post {
         success {
             echo 'CI Pipeline executed successfully 🎉'
