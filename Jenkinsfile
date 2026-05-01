@@ -23,7 +23,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh """
                     ${scannerHome}/bin/sonar-scanner \
-                    -Dsonar.projectKey=flask-capstone \
+                    -Dsonar.projectKey=Flask-capstone \
                     -Dsonar.sources=. \
                     -Dsonar.host.url=http://sonarqube:9000 \
                     -Dsonar.token=$SONAR_TOKEN
