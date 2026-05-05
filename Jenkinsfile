@@ -17,11 +17,13 @@ pipeline {
     steps {
         script {
             def scannerHome = tool 'SonarScanner'
-            withSonarQubeEnv('SonarQube') {
+            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                 sh """
                 ${scannerHome}/bin/sonar-scanner \
                 -Dsonar.projectKey=flask-capstone \
-                -Dsonar.sources=.
+                -Dsonar.sources=. \
+                -Dsonar.host.url=http://host.docker.internal:9000 \
+                -Dsonar.login=$SONAR_TOKEN
                 """
             }
         }
