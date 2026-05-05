@@ -14,26 +14,24 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            script {
+                def scannerHome = tool 'SonarScanner'
 
-                    script {
-                        def scannerHome = tool 'SonarScanner'
-
-                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-
-                            sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=flask-capstone \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://sonarqube:9000 \
-                            -Dsonar.token=${SONAR_TOKEN}
-                            """
-                        }
-                    }
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                    ${scannerHome}/bin/sonar-scanner \
+                    -Dsonar.projectKey=flask-capstone \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://sonarqube:9000 \
+                    -Dsonar.token=${SONAR_TOKEN}
+                    """
                 }
             }
         }
+    }
+}
 
         stage('Quality Gate') {
             steps {
