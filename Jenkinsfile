@@ -7,38 +7,40 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
+        stage('SonarQube Analysis') {
             steps {
-                git branch: 'main', url: 'https://github.com/annienankeu/pcl-devops-capstone.git'
+                withSonarQubeEnv('SonarQube') {
+
+                    sh '''
+                    /opt/sonar-scanner/bin/sonar-scanner \
+                      -Dsonar.projectKey=flask-capstone \
+                      -Dsonar.sources=app \
+                      -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
+                      -Dsonar.python.version=3.10 \
+                      -Dsonar.host.url=http://sonarqube:9000 \
+                      -Dsonar.token=$SONAR_TOKEN
+                    '''
+                }
             }
         }
 
-     stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('SonarQube') {
-            sh '''
-            /opt/sonar-scanner/bin/sonar-scanner \
-              -Dsonar.projectKey=flask-capstone \
-              -Dsonar.sources=app \
-              -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
-              -Dsonar.python.version=3.10 \
-              -Dsonar.host.url=http://sonarqube:9000 \
-              -Dsonar.token=$SONAR_TOKEN
-            '''
-        }
-    }
-}
         stage('Quality Gate') {
-    steps {
-        timeout(time: 2, unit: 'MINUTES') {
-            waitForQualityGate abortPipeline: true
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
         }
-    }
-}
 
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t ${IMAGE_NAME}:latest ."
+            }
+        }
+
+        stage('Trivy Security Scan') {
+            steps {
+                sh "trivy image ${IMAGE_NAME}:latest"
             }
         }
 
@@ -47,7 +49,11 @@ pipeline {
                 sh """
                 docker stop flask-app || true
                 docker rm flask-app || true
-                docker run -d --name flask-app -p 5000:5000 ${IMAGE_NAME}:latest
+
+                docker run -d \
+                  --name flask-app \
+                  -p 5000:5000 \
+                  ${IMAGE_NAME}:latest
                 """
             }
         }
