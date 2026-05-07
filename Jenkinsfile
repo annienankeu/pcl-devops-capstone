@@ -13,24 +13,18 @@ pipeline {
             }
         }
 
-       stage('SonarQube Analysis') {
+     stage('SonarQube Analysis') {
     steps {
         withSonarQubeEnv('SonarQube') {
-            script {
-                def scannerHome = tool 'SonarScanner'
-
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                    ${scannerHome}/bin/sonar-scanner \
-                    -Dsonar.projectKey=flask-capstone \
-                    -Dsonar.sources=app \
-                    -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
-                    -Dsonar.python.version=3.10 \
-                    -Dsonar.host.url=http://sonarqube:9000 \
-                    -Dsonar.token=$SONAR_TOKEN
-                    '''
-                }
-            }
+            sh '''
+            /opt/sonar-scanner/bin/sonar-scanner \
+              -Dsonar.projectKey=flask-capstone \
+              -Dsonar.sources=app \
+              -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
+              -Dsonar.python.version=3.10 \
+              -Dsonar.host.url=http://sonarqube:9000 \
+              -Dsonar.token=$SONAR_TOKEN
+            '''
         }
     }
 }
