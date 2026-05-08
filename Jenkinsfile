@@ -8,6 +8,12 @@ pipeline {
 
     stages {
 
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
@@ -68,8 +74,10 @@ pipeline {
                 sh '''
                 if ! command -v trivy &> /dev/null
                 then
-                    echo "Trivy not installed, installing..."
-                    apt-get update && apt-get install wget -y
+                    echo "Installing Trivy..."
+                    apt-get update -y
+                    apt-get install -y wget
+
                     wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.49.1_Linux-64bit.deb
                     dpkg -i trivy_0.49.1_Linux-64bit.deb
                 fi
