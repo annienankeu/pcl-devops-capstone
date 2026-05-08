@@ -3,14 +3,21 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-capstone"
+        DOCKER_IMAGE = "${env.DOCKERHUB_USER}/flask-capstone:latest"
     }
 
     stages {
 
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                url: 'https://github.com/annienankeu/pcl-devops-capstone.git'
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-
                     sh '''
                     /opt/sonar-scanner/bin/sonar-scanner \
                       -Dsonar.projectKey=flask-capstone \
@@ -37,43 +44,49 @@ pipeline {
                 sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
-stage('Push Docker Image') {
-    steps {
 
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-creds',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-        )]) {
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
 
-            sh '''
-            docker login -u $DOCKER_USER -p $DOCKER_PASS
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-            docker tag flask-capstone:latest $DOCKER_USER/flask-capstone:latest
-
-            docker push $DOCKER_USER/flask-capstone:latest
-            '''
+                    docker tag flask-capstone:latest $DOCKER_USER/flask-capstone:latest
+                    docker push $DOCKER_USER/flask-capstone:latest
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Trivy Security Scan') {
             steps {
-                sh "trivy image ${IMAGE_NAME}:latest"
+                sh '''
+                if ! command -v trivy &> /dev/null
+                then
+                    echo "Trivy not installed, installing..."
+                    apt-get update && apt-get install wget -y
+                    wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.49.1_Linux-64bit.deb
+                    dpkg -i trivy_0.49.1_Linux-64bit.deb
+                fi
+
+                trivy image ${IMAGE_NAME}:latest
+                '''
             }
         }
 
         stage('Run Container') {
             steps {
-                sh """
+                sh '''
                 docker stop flask-app || true
                 docker rm flask-app || true
 
-                docker run -d \
-                  --name flask-app \
-                  -p 5000:5000 \
-                  ${IMAGE_NAME}:latest
-                """
+                docker run -d --name flask-app -p 5000:5000 ${IMAGE_NAME}:latest
+                '''
             }
         }
     }
