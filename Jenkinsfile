@@ -15,8 +15,10 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/annienankeu/pcl-devops-capstone.git'
+                git(
+                    branch: 'main',
+                    url: 'https://github.com/annienankeu/pcl-devops-capstone.git'
+                )
             }
         }
 
@@ -34,12 +36,12 @@ pipeline {
 
                         sh '''
                         /opt/sonar-scanner/bin/sonar-scanner \
-                          -Dsonar.projectKey=flask-capstone \
-                          -Dsonar.sources=app \
-                          -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
-                          -Dsonar.python.version=3.10 \
-                          -Dsonar.host.url=http://sonarqube:9000 \
-                          -Dsonar.token=$SONAR_TOKEN
+                        -Dsonar.projectKey=flask-capstone \
+                        -Dsonar.sources=. \
+                        -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
+                        -Dsonar.python.version=3.10 \
+                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.token=$SONAR_TOKEN
                         '''
                     }
                 }
@@ -47,17 +49,19 @@ pipeline {
         }
 
         stage('Quality Gate') {
-    steps {
-        script {
-            echo "Skipping Quality Gate temporarily"
+            steps {
+                script {
+                    echo "Skipping Quality Gate temporarily"
+                }
+            }
         }
-    }
-}
 
         stage('Build Docker Image') {
             steps {
+
                 sh '''
-                docker build -t flask-capstone:latest .
+                docker build \
+                -t flask-capstone:latest .
                 '''
             }
         }
@@ -78,7 +82,8 @@ pipeline {
                     -u "$DOCKER_USER" \
                     --password-stdin
 
-                    docker tag flask-capstone:latest \
+                    docker tag \
+                    flask-capstone:latest \
                     $DOCKER_USER/flask-capstone:latest
 
                     docker push \
@@ -117,9 +122,10 @@ pipeline {
                 docker rm flask-app || true
 
                 docker run -d \
-                  --name flask-app \
-                  -p 5000:5000 \
-                  flask-capstone:latest
+                --rm \
+                --name flask-app \
+                -p 5000:5000 \
+                flask-capstone:latest
                 '''
             }
         }
