@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-capstone"
-        DOCKER_IMAGE = "${env.DOCKERHUB_USER}/flask-capstone:latest"
     }
 
     stages {
@@ -23,16 +22,26 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
+
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
-                    /opt/sonar-scanner/bin/sonar-scanner \
-                      -Dsonar.projectKey=flask-capstone \
-                      -Dsonar.sources=app \
-                      -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
-                      -Dsonar.python.version=3.10 \
-                      -Dsonar.host.url=http://sonarqube:9000 \
-                      -Dsonar.token=$SONAR_TOKEN
-                    '''
+
+                    withCredentials([
+                        string(
+                            credentialsId: 'sonar-token',
+                            variable: 'SONAR_TOKEN'
+                        )
+                    ]) {
+
+                        sh '''
+                        /opt/sonar-scanner/bin/sonar-scanner \
+                          -Dsonar.projectKey=flask-capstone \
+                          -Dsonar.sources=app \
+                          -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
+                          -Dsonar.python.version=3.10 \
+                          -Dsonar.host.url=http://sonarqube:9000 \
+                          -Dsonar.token=$SONAR_TOKEN
+                        '''
+                    }
                 }
             }
         }
@@ -47,23 +56,33 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:latest ."
+                sh '''
+                docker build -t flask-capstone:latest .
+                '''
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
 
                     sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    echo "$DOCKER_PASS" | docker login \
+                    -u "$DOCKER_USER" \
+                    --password-stdin
 
-                    docker tag flask-capstone:latest $DOCKER_USER/flask-capstone:latest
-                    docker push $DOCKER_USER/flask-capstone:latest
+                    docker tag flask-capstone:latest \
+                    $DOCKER_USER/flask-capstone:latest
+
+                    docker push \
+                    $DOCKER_USER/flask-capstone:latest
                     '''
                 }
             }
@@ -71,35 +90,43 @@ pipeline {
 
         stage('Trivy Security Scan') {
             steps {
+
                 sh '''
-                if ! command -v trivy &> /dev/null
+                if ! command -v trivy > /dev/null
                 then
                     echo "Installing Trivy..."
+
                     apt-get update -y
                     apt-get install -y wget
 
                     wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.49.1_Linux-64bit.deb
+
                     dpkg -i trivy_0.49.1_Linux-64bit.deb
                 fi
 
-                trivy image ${IMAGE_NAME}:latest
+                trivy image flask-capstone:latest
                 '''
             }
         }
 
         stage('Run Container') {
             steps {
+
                 sh '''
                 docker stop flask-app || true
                 docker rm flask-app || true
 
-                docker run -d --name flask-app -p 5000:5000 ${IMAGE_NAME}:latest
+                docker run -d \
+                  --name flask-app \
+                  -p 5000:5000 \
+                  flask-capstone:latest
                 '''
             }
         }
     }
 
     post {
+
         success {
             echo 'CI Pipeline executed successfully 🎉'
         }
