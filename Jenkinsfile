@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -50,19 +51,13 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                script {
-                    echo "Skipping Quality Gate temporarily"
-                }
+                echo 'Skipping Quality Gate temporarily'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-
-                sh '''
-                docker build \
-                -t flask-capstone:latest .
-                '''
+                sh 'docker build -t flask-capstone:latest .'
             }
         }
 
@@ -82,8 +77,7 @@ pipeline {
                     -u "$DOCKER_USER" \
                     --password-stdin
 
-                    docker tag \
-                    flask-capstone:latest \
+                    docker tag flask-capstone:latest \
                     $DOCKER_USER/flask-capstone:latest
 
                     docker push \
@@ -95,22 +89,7 @@ pipeline {
 
         stage('Trivy Security Scan') {
             steps {
-
-                sh '''
-                if ! command -v trivy > /dev/null
-                then
-                    echo "Installing Trivy..."
-
-                    apt-get update -y
-                    apt-get install -y wget
-
-                    wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.49.1_Linux-64bit.deb
-
-                    dpkg -i trivy_0.49.1_Linux-64bit.deb
-                fi
-
-                trivy image flask-capstone:latest
-                '''
+                sh 'trivy image flask-capstone:latest'
             }
         }
 
@@ -122,7 +101,6 @@ pipeline {
                 docker rm flask-app || true
 
                 docker run -d \
-                --rm \
                 --name flask-app \
                 -p 5000:5000 \
                 flask-capstone:latest
