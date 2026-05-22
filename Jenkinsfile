@@ -50,10 +50,19 @@ pipeline {
         }
 
         stage('Quality Gate') {
-            steps {
-                echo 'Skipping Quality Gate temporarily'
+    steps {
+        script {
+            timeout(time: 10, unit: 'MINUTES') {
+                def qg = waitForQualityGate()
+                echo "Quality Gate status: ${qg.status}"
+
+                if (qg.status != 'OK') {
+                    error "Pipeline failed due to Sonar Quality Gate: ${qg.status}"
+                }
             }
         }
+    }
+}
 
         stage('Build Docker Image') {
             steps {
