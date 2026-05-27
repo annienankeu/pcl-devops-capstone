@@ -105,15 +105,10 @@ pipeline {
             }
         }
 
-        stage('Trivy Security Scan') {
+       stage('Trivy Security Scan') {
     steps {
         sh '''
-        echo "Running Trivy scan..."
-
-        trivy image \
-        --severity HIGH,CRITICAL \
-        --exit-code 0 \
-        flask-capstone:latest
+        trivy image --severity HIGH,CRITICAL flask-capstone:latest
         '''
     }
 }
