@@ -24,30 +24,30 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
+    steps {
 
-                withSonarQubeEnv('SonarQube') {
+        withSonarQubeEnv('SonarQube') {
 
-                    withCredentials([
-                        string(
-                            credentialsId: 'sonar-token',
-                            variable: 'SONAR_TOKEN'
-                        )
-                    ]) {
+            withCredentials([
+                string(
+                    credentialsId: 'sonar-token',
+                    variable: 'SONAR_TOKEN'
+                )
+            ]) {
 
-                        sh '''
-                        /opt/sonar-scanner/bin/sonar-scanner \
-                        -Dsonar.projectKey=flask-capstone \
-                        -Dsonar.sources=. \
-                        -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
-                        -Dsonar.python.version=3.10 \
-                        -Dsonar.host.url=http://sonarqube:9000 \
-                        -Dsonar.token=$SONAR_TOKEN
-                        '''
-                    }
-                }
+                sh '''
+                /opt/sonar-scanner/bin/sonar-scanner \
+                -Dsonar.projectKey=flask-capstone \
+                -Dsonar.sources=. \
+                -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
+                -Dsonar.python.version=3.10 \
+                -Dsonar.host.url=http://localhost:9000 \
+                -Dsonar.token=$SONAR_TOKEN
+                '''
             }
         }
+    }
+}
 
         stage('Quality Gate') {
     steps {
