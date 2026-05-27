@@ -108,12 +108,12 @@ pipeline {
         stage('Trivy Security Scan') {
     steps {
         sh '''
-        echo Installing Trivy...
+        echo "Running Trivy scan..."
 
-        apt-get update -y
-        apt-get install -y wget
-
-        wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.49.1_Linux-64bit.deb
+        trivy image \
+        --severity HIGH,CRITICAL \
+        --exit-code 0 \
+        flask-capstone:latest
         '''
     }
 }
