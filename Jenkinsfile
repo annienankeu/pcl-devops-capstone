@@ -95,10 +95,12 @@ pipeline {
         }
 
         stage('Trivy Security Scan') {
-            steps {
-                sh 'trivy image flask-capstone:latest'
-            }
-        }
+    steps {
+        sh '''
+        trivy image --severity HIGH,CRITICAL flask-capstone:latest
+        '''
+    }
+}
 
         stage('Run Container') {
             steps {
