@@ -4,6 +4,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-capstone"
+        DOCKER_IMAGE = "annie237/flask-capstone:latest"
     }
 
     stages {
@@ -24,51 +25,61 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-    steps {
+            steps {
 
-        withSonarQubeEnv('SonarQube') {
+                withSonarQubeEnv('SonarQube') {
 
-            withCredentials([
-                string(
-                    credentialsId: 'sonar-token',
-                    variable: 'SONAR_TOKEN'
-                )
-            ]) {
+                    withCredentials([
+                        string(
+                            credentialsId: 'sonar-token',
+                            variable: 'SONAR_TOKEN'
+                        )
+                    ]) {
 
-                sh '''
-                /opt/sonar-scanner/bin/sonar-scanner \
-                -Dsonar.projectKey=flask-capstone \
-                -Dsonar.sources=. \
-                -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
-                -Dsonar.python.version=3.10 \
-                -Dsonar.host.url=http://localhost:9000 \
-                -Dsonar.token=$SONAR_TOKEN
-                '''
-            }
-        }
-    }
-}
-
-        stage('Quality Gate') {
-    steps {
-        script {
-            timeout(time: 5, unit: 'MINUTES') {
-                def qg = waitForQualityGate()
-                if (qg.status != 'OK') {
-                    error "Pipeline failed due to Quality Gate: ${qg.status}"
+                        sh '''
+                        /opt/sonar-scanner/bin/sonar-scanner \
+                        -Dsonar.projectKey=flask-capstone \
+                        -Dsonar.sources=. \
+                        -Dsonar.exclusions=**/venv/**,**/__pycache__/**,**/*.pyc \
+                        -Dsonar.python.version=3.10 \
+                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.token=$SONAR_TOKEN
+                        '''
+                    }
                 }
             }
         }
-    }
-}
+
+        stage('Quality Gate') {
+            steps {
+                script {
+
+                    timeout(time: 5, unit: 'MINUTES') {
+
+                        def qg = waitForQualityGate()
+
+                        if (qg.status != 'OK') {
+                            error(
+                                "Quality Gate Failed: ${qg.status}"
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t flask-capstone:latest .'
+
+                sh '''
+                docker build \
+                -t flask-capstone:latest .
+                '''
             }
         }
 
         stage('Push to DockerHub') {
+
             steps {
 
                 withCredentials([
@@ -84,23 +95,29 @@ pipeline {
                     -u "$DOCKER_USER" \
                     --password-stdin
 
-                    docker tag flask-capstone:latest \
-                    $DOCKER_USER/flask-capstone:latest
+                    docker tag \
+                    flask-capstone:latest \
+                    $DOCKER_IMAGE
 
-                    docker push \
-                    $DOCKER_USER/flask-capstone:latest
+                    docker push $DOCKER_IMAGE
                     '''
                 }
             }
         }
 
         stage('Trivy Security Scan') {
-    steps {
-        sh '''
-        trivy image --severity HIGH,CRITICAL flask-capstone:latest
-        '''
-    }
-}
+            steps {
+
+                sh '''
+                echo "Running Trivy scan..."
+
+                trivy image \
+                --severity HIGH,CRITICAL \
+                --exit-code 0 \
+                flask-capstone:latest
+                '''
+            }
+        }
 
         stage('Run Container') {
             steps {
@@ -121,11 +138,11 @@ pipeline {
     post {
 
         success {
-            echo 'CI Pipeline executed successfully 🎉'
+            echo 'CI Pipeline executed successfully'
         }
 
         failure {
-            echo 'CI Pipeline failed ❌ Check logs'
+            echo 'CI Pipeline failed'
         }
     }
 }
