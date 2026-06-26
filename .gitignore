@@ -1,22 +1,12 @@
-# Private keys
-*.pem
-
 # Terraform
-.terraform/
+terraform/.terraform/
+**/.terraform/
 *.tfstate
 *.tfstate.*
 crash.log
 
-# Ansible
+# Private keys
+*.pem
+
+# Generated inventory
 ansible/inventory.ini
-
-# Python
-__pycache__/
-*.pyc
-
-# VS Code
-.vscode/
-
-# OS files
-.DS_Store
-Thumbs.db
