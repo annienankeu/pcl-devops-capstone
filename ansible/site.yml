@@ -1,0 +1,6 @@
+---
+- import_playbook: playbook.yml
+
+- import_playbook: kubernetes.yml
+
+- import_playbook: deploy_k8s.yml

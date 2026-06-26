@@ -1,0 +1,43 @@
+---
+- name: Deploy Flask App to Kubernetes
+  hosts: web
+  become: yes
+
+  tasks:
+
+    - name: Copy Kubernetes manifests
+      copy:
+        src: ../kubernetes/
+        dest: /home/ec2-user/kubernetes/
+
+    - name: Apply Deployment
+      become_user: ec2-user
+      shell: kubectl apply -f /home/ec2-user/kubernetes/deployment.yaml
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+
+    - name: Apply Service
+      become_user: ec2-user
+      shell: kubectl apply -f /home/ec2-user/kubernetes/service.yaml
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+
+    - name: Verify pods
+      become_user: ec2-user
+      shell: kubectl get pods
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: pod_output
+
+    - debug:
+        var: pod_output.stdout_lines
+
+    - name: Verify services
+      become_user: ec2-user
+      shell: kubectl get svc
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: svc_output
+
+    - debug:
+        var: svc_output.stdout_lines

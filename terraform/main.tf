@@ -1,6 +1,15 @@
 provider "aws" {
   region = "us-east-1"
-    
+}
+
+resource "local_file" "ansible_inventory" {
+  content = templatefile("${path.module}/inventory.tpl",
+    {
+      ip = aws_instance.app_server.public_ip
+    }
+  )
+
+  filename = "../ansible/inventory.ini"
 }
 
 
