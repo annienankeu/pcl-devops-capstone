@@ -4,7 +4,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-capstone"
-        DOCKER_IMAGE = "annie237/flask-capstone:latest"
+        DOCKER_IMAGE = "annie237/flask-capstone:v2"
     }
 
     stages {
@@ -73,7 +73,7 @@ pipeline {
 
                 sh '''
                 docker build \
-                -t flask-capstone:latest .
+                -t flask-capstone:v2 .
                 '''
             }
         }
@@ -96,7 +96,7 @@ pipeline {
                     --password-stdin
 
                     docker tag \
-                    flask-capstone:latest \
+                    flask-capstone:v2 \
                     $DOCKER_IMAGE
 
                     docker push $DOCKER_IMAGE
@@ -108,7 +108,7 @@ pipeline {
        stage('Trivy Security Scan') {
     steps {
         sh '''
-        trivy image --severity HIGH,CRITICAL flask-capstone:latest
+            trivy image --severity HIGH,CRITICAL flask-capstone:v2
         '''
     }
 }
@@ -123,7 +123,7 @@ pipeline {
                 docker run -d \
                 --name flask-app \
                 -p 5000:5000 \
-                flask-capstone:latest
+                flask-capstone:v2
                 '''
             }
         }
